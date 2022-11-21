@@ -6,6 +6,7 @@ import fitnesse.wiki.*;
 public class TestableHtml {
     StringBuffer contentBuffer;
     WikiPage wikiPage;
+    PageData pageData;
 
     private final String INCLUDE_SETUP_INDICATOR = "!include -setup .";
     private final String INCLUDE_TEARDOWN_INDICATOR = "!include -teardown .";
@@ -14,20 +15,22 @@ public class TestableHtml {
     private final String TEARDOWN_PAGE_NAME = "TearDown";
 
     public String testableHtml(PageData pageData, boolean includeSuiteSetup) throws Exception {
+        this.pageData = pageData;
         wikiPage = pageData.getWikiPage();
         contentBuffer = new StringBuffer();
 
-        if (pageData.hasAttribute("Test")) {
+        if (isTest()) {
             includeSetupPages(includeSuiteSetup);
-        }
-
-        contentBuffer.append(pageData.getContent());
-        if (pageData.hasAttribute("Test")) {
+            contentBuffer.append(pageData.getContent());
             includeTeardownPages(includeSuiteSetup);
+            pageData.setContent(contentBuffer.toString());
         }
 
-        pageData.setContent(contentBuffer.toString());
         return pageData.getHtml();
+    }
+
+    private boolean isTest() throws Exception {
+        return pageData.hasAttribute("Test");
     }
 
     private void includeTeardownPages(boolean includeSuiteSetup) throws Exception {
@@ -54,5 +57,6 @@ public class TestableHtml {
     private void renderPageAndAppendToContent(WikiPage suiteSetup, String indicator) throws Exception {
         WikiPagePath pagePath = wikiPage.getPageCrawler().getFullPath(suiteSetup);
         String pagePathName = PathParser.render(pagePath);
+        contentBuffer.append(indicator).append(pagePathName).append("\n");
     }
 }
