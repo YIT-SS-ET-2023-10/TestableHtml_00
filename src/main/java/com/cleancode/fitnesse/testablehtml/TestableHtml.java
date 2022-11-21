@@ -10,44 +10,49 @@ public class TestableHtml {
     private final String INCLUDE_SETUP_INDICATOR = "!include -setup .";
     private final String INCLUDE_TEARDOWN_INDICATOR = "!include -teardown .";
 
+    private final String SETUP_PAGE_NAME = "SetUp";
+    private final String TEARDOWN_PAGE_NAME = "TearDown";
+
     public String testableHtml(PageData pageData, boolean includeSuiteSetup) throws Exception {
         wikiPage = pageData.getWikiPage();
         contentBuffer = new StringBuffer();
 
         if (pageData.hasAttribute("Test")) {
-            if (includeSuiteSetup) {
-                WikiPage suiteSetup = PageCrawlerImpl.getInheritedPage(SuiteResponder.SUITE_SETUP_NAME, wikiPage);
-                if (suiteSetup != null) {
-                    renderPageAndAppendToContent( suiteSetup, INCLUDE_SETUP_INDICATOR);
-                }
-            }
-            WikiPage setup = PageCrawlerImpl.getInheritedPage("SetUp", wikiPage);
-            if (setup != null) {
-                renderPageAndAppendToContent(  setup, INCLUDE_SETUP_INDICATOR);
-            }
+            includeSetupPages(includeSuiteSetup);
         }
 
         contentBuffer.append(pageData.getContent());
         if (pageData.hasAttribute("Test")) {
-            WikiPage teardown = PageCrawlerImpl.getInheritedPage("TearDown", wikiPage);
-            if (teardown != null) {
-                renderPageAndAppendToContent(  teardown, INCLUDE_TEARDOWN_INDICATOR);
-            }
-            if (includeSuiteSetup) {
-                WikiPage suiteTeardown = PageCrawlerImpl.getInheritedPage(SuiteResponder.SUITE_TEARDOWN_NAME, wikiPage);
-                if (suiteTeardown != null) {
-                    renderPageAndAppendToContent(  suiteTeardown, INCLUDE_TEARDOWN_INDICATOR);
-                }
-            }
+            includeTeardownPages(includeSuiteSetup);
         }
 
         pageData.setContent(contentBuffer.toString());
         return pageData.getHtml();
     }
 
+    private void includeTeardownPages(boolean includeSuiteSetup) throws Exception {
+        includePageToContent(TEARDOWN_PAGE_NAME, INCLUDE_TEARDOWN_INDICATOR);
+        if (includeSuiteSetup) {
+            includePageToContent(SuiteResponder.SUITE_TEARDOWN_NAME, INCLUDE_TEARDOWN_INDICATOR);
+        }
+    }
+
+    private void includeSetupPages(boolean includeSuiteSetup) throws Exception {
+        if (includeSuiteSetup) {
+            includePageToContent(SuiteResponder.SUITE_SETUP_NAME, INCLUDE_SETUP_INDICATOR);
+        }
+        includePageToContent(SETUP_PAGE_NAME, INCLUDE_SETUP_INDICATOR);
+    }
+
+    private void includePageToContent(String pageName, String include_indicator) throws Exception {
+        WikiPage suiteSetup = PageCrawlerImpl.getInheritedPage(pageName, wikiPage);
+        if (suiteSetup != null) {
+            renderPageAndAppendToContent(suiteSetup, include_indicator);
+        }
+    }
+
     private void renderPageAndAppendToContent(WikiPage suiteSetup, String indicator) throws Exception {
         WikiPagePath pagePath = wikiPage.getPageCrawler().getFullPath(suiteSetup);
         String pagePathName = PathParser.render(pagePath);
-        contentBuffer.append(indicator).append(pagePathName).append("\n");
     }
 }
